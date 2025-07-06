@@ -1,0 +1,4 @@
+nicegui==2.20.0
+pypdf==5.7.0
+segno==1.6.6
+validators==0.34.0
