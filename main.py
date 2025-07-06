@@ -2,7 +2,7 @@ from nicegui import ui, ElementFilter
 import base64
 from internals.data_container import DataContainer
 from internals.async_qr import make
-from asyncio import sleep
+from time import sleep
 from threading import Thread
 
 import internals.widgets as widgets
