@@ -18,7 +18,7 @@ sys.argv += ["--onefile"]  # slower to load, but only one file
 sys.argv += ["--windowed"]  # do not show terminal
 
 if (ROOT / "logos").exists():
-    sys.argv += ["--icon=res/logo.ico"]
+    sys.argv += ["--icon=logos/logo.ico"]
 
 sys.argv += ["--name", "VolontQR"]
 sys.argv += ["main.py"]
