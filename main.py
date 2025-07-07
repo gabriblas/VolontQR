@@ -133,11 +133,11 @@ def main():
 
 
 app.native.settings["ALLOW_DOWNLOADS"] = True
-# app.on_connect(lambda event: app.native.main_window.maximize())
+app.on_connect(lambda event: app.native.main_window.maximize())
 
 if __name__ in ["__main__", "__mp_main__"]:
     ui.run(
         title=NAME,
-        # reload=False,
-        # native=True,
+        reload=False,
+        native=True,
     )

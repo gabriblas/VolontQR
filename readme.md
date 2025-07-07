@@ -1,8 +1,8 @@
 # VolontQR
 
-Questa repo contiene il codice sorgente per il generatore di codici QR usato da VolontMusic e la relativa interfaccia grafica. I codici QR vengono generati in parallelo piuttosto velocemente e il file risultante è abbastanza ottimizzato: anche migliaia di codici QR richiedono poco tempo per essere generati e occupano solitamente pochi MB.
+Questa repo contiene il codice sorgente per il generatore di codici QR usato da VolontMusic e la relativa interfaccia grafica. Questo strumento consente di creare un grande numero di biglietti, ognuno con un codice QR differente in base ad una lista di link (usato principalmente per permettere il voto dal pubblico in sala per contest musicali live). I codici QR vengono generati in parallelo piuttosto velocemente e il file risultante è abbastanza ottimizzato e compatto.
 
-Il codice è stato sviluppato secondo il principio "Everything Just Works Until You Do Something Slightly Different": altrimenti detto, la funzionalità principale c'è, ma è pieno di bug e tutto crolla e brucia se usato in maniera leggermente inconvenzionale. Tuttavia, sentitevi liberi di aprire issues e suggerimenti!
+Il codice è stato sviluppato secondo il principio "Everything Just Works Until You Do Something Slightly Different": altrimenti detto, la funzionalità principale c'è, ma è pieno di bug e tutto crolla e brucia se usato in maniera leggermente inconvenzionale. Tuttavia, sentitevi liberi di aprire issues e inviare suggerimenti!
 
 ## Run e build
 
