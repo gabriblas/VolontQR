@@ -56,12 +56,13 @@ class AccuracySelector(ui.row):
             ui.label("Accuratezza").classes("whitespace-nowrap")
 
             m = len(QR_ERRORS)
-            self.slider = ui.slider(min=1, max=m, step=1, value=m)
-            self.slider.on_value_change(data.on_upd_err)
-            self.slider.props("label-always").classes("flex-grow").style("width: 80px")
-            ui.tooltip(
-                "Un valore più alto risulta in un QR code più grande ma che verrà riconosciuto meglio. Questo è estremamente consigliato se un logo è incluso al centro del QR code."
-            ).style("width: 30em")
+            self.radio = ui.radio(list(range(1, m + 1)), value=m).props("inline")
+            self.radio.on_value_change(data.on_upd_err)
+            ui.space()
+            with ui.icon("sym_r_help").classes("text-xl"):
+                ui.tooltip(
+                    "Un valore più alto risulta in un QR code più grande ma che verrà riconosciuto meglio. Questo è estremamente consigliato se un logo è incluso al centro del QR code."
+                ).style("width: 30em")
 
 
 class ColorSelector(ui.button):
