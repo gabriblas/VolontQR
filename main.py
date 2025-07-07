@@ -1,4 +1,4 @@
-from nicegui import ui, ElementFilter
+from nicegui import ui, app, ElementFilter
 import base64
 from internals.data_container import DataContainer
 from internals.async_qr import make
@@ -54,7 +54,9 @@ async def make_pdf(event):
         spin = ui.spinner(color="white")
 
     pages = list()
-    percentage_thread = Thread(target = percentage, args = (pages, len(data.valid_links), make_btn))
+    percentage_thread = Thread(
+        target=percentage, args=(pages, len(data.valid_links), make_btn)
+    )
     percentage_thread.start()
     data.pdf_bytes = await make(data, pages, preview=False, optimize=True)
 
@@ -66,6 +68,7 @@ async def make_pdf(event):
 
 
 data = DataContainer()
+
 
 @ui.page("/")
 def main():
@@ -112,15 +115,20 @@ def main():
                     "preview"
                 )
                 with ui.button_group():
-                    make_btn = widgets.MakeButton(make_pdf, "Genera tutti").mark("make_pdf")
+                    make_btn = widgets.MakeButton(make_pdf, "Genera tutti").mark(
+                        "make_pdf"
+                    )
                     make_btn.classes(add="w-[150px]")
                     widgets.DownloadButton(data).mark("download")
             ui.card().classes("w-full h-full flex justify-center").mark("preview")
 
 
-ui.run(
-    title="VolontQR",
-    favicon="🚀",
-    reload=False,
-    # native=True,
-)
+app.native.settings["ALLOW_DOWNLOADS"] = True
+app.on_connect(lambda event: app.native.main_window.maximize())
+
+if __name__ == "__main__":
+    ui.run(
+        title="VolontQR",
+        reload=False,
+        native=True,
+    )
