@@ -22,7 +22,7 @@ sys.argv += ["--windowed"]  # do not show terminal
 if (ROOT / "logos" / "logo.ico").exists():
     sys.argv += ["--icon=logos/logo.ico"]
 
-sys.argv += ["--name", f"\"{NAME}\""]
+sys.argv += ["--name", f"{NAME}"]
 sys.argv += ["main.py"]
 
 if __name__ == "__main__":
