@@ -19,10 +19,14 @@ pip3 install -r requirements.txt
 python3 main.py
 ```
 
-È anche possibile effettuare il packaging degli script in un unico eseguibile tramite i tool della libreria NiceGUI. Per compilare l'eseguibile (dopo aver installato le dipendenze come sopra):
+È anche possibile effettuare il packaging degli script in un unico eseguibile tramite i tool della libreria [NiceGUI](https://nicegui.io/) (che a sua volta utilizza [pyInstaller](https://pyinstaller.org/) e [pywebview](https://pywebview.flowrl.com/)). Per compilare l'eseguibile (dopo aver installato le dipendenze come sopra):
 
 ```bash
 python3 build.py
 ```
 
 Verranno create due cartelle `build` e `dist`. Il file eseguibile è in quest'ultima. Per creare una nuova build, le due cartelle devono essere eliminate manualmente.
+
+## Releases
+
+Per convenienza dello staff VolontMusic, file precompilati per Windows sono disponibili nella sezione release. In generale, tuttavia, scaricare eseguibili a caso da internet è [una](https://en.wikipedia.org/wiki/Computer_virus) [pessima](https://en.wikipedia.org/wiki/XZ_Utils_backdoor) [idea](https://www.cs.cmu.edu/~rdriley/487/papers/Thompson_1984_ReflectionsonTrustingTrust.pdf) e lo sconsiglio vivamente. Piuttosto, consiglio di clonare questa repo e leggere i contenuti dei file (sono poche centinaia di linee!).
