@@ -36,10 +36,14 @@ async def make_preview(event):
         ).classes("h-full w-full").mark("preview")
 
 
-def percentage(pages, total, btn: widgets.MakeButton):
+def percentage(data, pages, btn: widgets.MakeButton):
     original = btn.text
+    total = len(data.valid_links)
     while len(pages) != total:
         btn.set_text(f"{len(pages) / total:.0%}")
+        sleep(0.1)
+    while data.pdf_bytes is None:
+        btn.set_text("Ottimizzazione...")
         sleep(0.1)
     btn.set_text(original)
 
@@ -55,8 +59,9 @@ async def make_pdf(event):
         spin = ui.spinner(color="white")
 
     pages = list()
+    data.pdf_bytes = None
     percentage_thread = Thread(
-        target=percentage, args=(pages, len(data.valid_links), make_btn)
+        target=percentage, args=(data, pages, make_btn)
     )
     percentage_thread.start()
     data.pdf_bytes = await make(data, pages, preview=False, optimize=True)
