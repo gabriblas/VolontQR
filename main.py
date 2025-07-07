@@ -120,6 +120,11 @@ def main():
                     widgets.NumberSlider("Dimensioni", data.on_upd_d, data.d, min=1)
                     widgets.NumberKnob("Ruota", data.on_upd_r, data.r)
 
+            with widgets.MainColumn("Opzioni pdf").classes("w-full"):
+                with ui.card().classes("w-full"):
+                    ui.switch('Rimuovi immagini duplicate')
+                    ui.switch('Comprimi content streams')
+
         with widgets.MainColumn("Anteprima") as col:
             col.classes("flex-grow")  # fill remaining space
             with col.title_row:
@@ -144,6 +149,6 @@ app.on_connect(lambda event: app.native.main_window.maximize())
 if __name__ in ["__main__", "__mp_main__"]:
     ui.run(
         title=NAME,
-        reload=False,
-        native=True,
+        # reload=False,
+        # native=True,
     )
