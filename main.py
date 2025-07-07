@@ -6,6 +6,7 @@ from time import sleep
 from threading import Thread
 
 import internals.widgets as widgets
+from infos import NAME, VERSION, WEBSITE
 
 
 async def make_preview(event):
@@ -69,10 +70,17 @@ async def make_pdf(event):
 
 data = DataContainer()
 
-
 @ui.page("/")
 def main():
     ui.query(".nicegui-content").classes("h-screen w-screen")
+    with ui.row().classes("h -[20px] w-full items-center"):
+        ui.label(f"🚀{NAME}").classes("text-2xl")
+        ui.space()
+        ui.label(VERSION)
+        ui.add_head_html('<link href="https://unpkg.com/eva-icons@1.1.3/style/eva-icons.css" rel="stylesheet" />')
+        with ui.link(target=WEBSITE).classes('text-2xl').tooltip('GitHub'):
+            ui.icon("eva-github").classes('fill-white scale-125 m-1')
+
     with ui.row().classes("h-full w-full"):
         with widgets.MainColumn("Dati"):
             ui.upload(
@@ -85,25 +93,26 @@ def main():
             widgets.LinksContainer(data.on_upd_links)
 
         with widgets.MainColumn("Stile"):
-            widgets.AccuracySelector(data)
-            with ui.row().classes("w-full items-center gap-4"):
-                ui.label("Primo piano")
-                widgets.ColorSelector(data.on_upd_fg_col, data.style["dark"])
-                ui.label("Sfondo")
-                widgets.ColorSelector(
-                    data.on_upd_bg_col,
-                    data.style["light"],
-                    alpha_callback=data.on_upd_bg_alpha,
-                )
+            with ui.card():
+                widgets.AccuracySelector(data)
+                with ui.row().classes("w-full items-center gap-4"):
+                    ui.label("Primo piano")
+                    widgets.ColorSelector(data.on_upd_fg_col, data.style["dark"])
+                    ui.label("Sfondo")
+                    widgets.ColorSelector(
+                        data.on_upd_bg_col,
+                        data.style["light"],
+                        alpha_callback=data.on_upd_bg_alpha,
+                    )
 
-            with ui.grid(columns="1fr 2fr 1fr 2fr").classes(
-                "w-full justify-items-center align-items-center"
-            ):
-                widgets.NumberSlider("x", data.on_upd_x, data.x)
-                widgets.NumberSlider("y", data.on_upd_y, data.y)
+                with ui.grid(columns="1fr 2fr 1fr 2fr").classes(
+                    "w-full justify-items-center align-items-center"
+                ):
+                    widgets.NumberSlider("x", data.on_upd_x, data.x)
+                    widgets.NumberSlider("y", data.on_upd_y, data.y)
 
-                widgets.NumberSlider("Dimensioni", data.on_upd_d, data.d, min=1)
-                widgets.NumberKnob("Ruota", data.on_upd_r, data.r)
+                    widgets.NumberSlider("Dimensioni", data.on_upd_d, data.d, min=1)
+                    widgets.NumberKnob("Ruota", data.on_upd_r, data.r)
 
         with widgets.MainColumn("Anteprima") as col:
             col.classes("flex-grow")  # fill remaining space
@@ -124,11 +133,11 @@ def main():
 
 
 app.native.settings["ALLOW_DOWNLOADS"] = True
-app.on_connect(lambda event: app.native.main_window.maximize())
+# app.on_connect(lambda event: app.native.main_window.maximize())
 
-if __name__ == "__main__":
+if __name__ in ["__main__", "__mp_main__"]:
     ui.run(
-        title="VolontQR",
-        reload=False,
-        native=True,
+        title=NAME,
+        # reload=False,
+        # native=True,
     )
