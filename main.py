@@ -1,12 +1,15 @@
-from nicegui import ui, app, ElementFilter
 import base64
-from internals.data_container import DataContainer
-from internals.async_qr import make
-from time import sleep
 from threading import Thread
+from time import sleep
+
+from nicegui import ElementFilter, app, ui
 
 import internals.widgets as widgets
 from infos import NAME, VERSION, WEBSITE
+from internals.async_qr import make
+from internals.data_container import DataContainer
+
+data = DataContainer()
 
 
 async def make_preview(event):
@@ -60,9 +63,7 @@ async def make_pdf(event):
 
     pages = list()
     data.pdf_bytes = None
-    percentage_thread = Thread(
-        target=percentage, args=(data, pages, make_btn)
-    )
+    percentage_thread = Thread(target=percentage, args=(data, pages, make_btn))
     percentage_thread.start()
     data.pdf_bytes = await make(data, pages, preview=False, optimize=True)
 
@@ -73,8 +74,6 @@ async def make_pdf(event):
     dl_btn.set_data(data.pdf_bytes)
 
 
-data = DataContainer()
-
 @ui.page("/")
 def main():
     ui.query(".nicegui-content").classes("h-screen w-screen")
@@ -82,9 +81,11 @@ def main():
         ui.label(f"🚀{NAME}").classes("text-2xl")
         ui.space()
         ui.label(VERSION)
-        ui.add_head_html('<link href="https://unpkg.com/eva-icons@1.1.3/style/eva-icons.css" rel="stylesheet" />')
-        with ui.link(target=WEBSITE).classes('text-2xl').tooltip('GitHub'):
-            ui.icon("eva-github").classes('fill-white scale-125 m-1')
+        ui.add_head_html(
+            '<link href="https://unpkg.com/eva-icons@1.1.3/style/eva-icons.css" rel="stylesheet" />'
+        )
+        with ui.link(target=WEBSITE).classes("text-2xl").tooltip("GitHub"):
+            ui.icon("eva-github").classes("fill-white scale-125 m-1")
 
     with ui.row().classes("h-full w-full"):
         with widgets.MainColumn("Dati"):
