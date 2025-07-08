@@ -6,8 +6,13 @@ from io import BytesIO
 from pypdf import PageObject, PdfReader, PdfWriter, Transformation
 from segno import make as make_qr
 
+from .data_container import QR_ERRORS
+
+QR_ERRORS = list(QR_ERRORS)
+
 Parameters = namedtuple(
-    "Parameters", ["data", "error", "style", "transform", "bg", "width", "height"]
+    "Parameters",
+    ["link", "error", "fg_color", "bg_color", "transform", "bytes", "width", "height"],
 )
 Transform = namedtuple("Transform", ["x", "y", "d", "r"])
 
@@ -15,10 +20,19 @@ Transform = namedtuple("Transform", ["x", "y", "d", "r"])
 def setup(data, preview):
     tx = Transform(data.x / 100, data.y / 100, data.d / 100, data.r)
     params = list()
+    QR_ERRORS = ["l", "m", "q", "h"]
+
 
     for link in data.valid_links[:1] if preview else data.valid_links:
         p = Parameters(
-            link, data.err.value, data.style, tx, data.bg_bytes, data.width, data.height
+            link,
+            QR_ERRORS[data.err - 1],
+            data.fg_color,
+            data.bg_color,
+            tx,
+            data.bg.bytes,
+            data.bg.width,
+            data.bg.height,
         )
         params.append(p)
 
@@ -26,11 +40,11 @@ def setup(data, preview):
 
 
 def make_page(params: Parameters):
-    bg_page = PdfReader(BytesIO(params.bg)).pages[0]
+    bg_page = PdfReader(BytesIO(params.bytes)).pages[0]
 
     buffer = BytesIO()
-    qr = make_qr(params.data, error=params.error)
-    qr.save(buffer, kind="pdf", **params.style)
+    qr = make_qr(params.link, error=params.error)
+    qr.save(buffer, kind="pdf", dark=params.fg_color, light=params.bg_color)
     stamp = PdfReader(buffer).pages[0]
 
     s = (
@@ -54,7 +68,9 @@ def make_page(params: Parameters):
     y = bg_page.mediabox.height * params.transform.y - yo
     stamp.add_transformation(Transformation().translate(x, y), expand=True)
 
-    new_page = PageObject.create_blank_page(width=params.width, height=params.height)
+    new_page = PageObject.create_blank_page(
+        width=params.width, height=params.height
+    )  # todo: can't use bg_page.mediabox?
     new_page.merge_page(bg_page)
     new_page.merge_page(stamp, expand=True, over=True)
 
@@ -98,6 +114,7 @@ async def make(data, pages, preview, optimize=True):
             pages.append(page)
 
     # assemble pages
-    pdf_buffer = await asyncio.to_thread(assemble_pages, pages, optimize)
+    # pdf_buffer = await asyncio.to_thread(assemble_pages, pages, optimize)
+    pdf_buffer = assemble_pages(pages, optimize)
 
     return pdf_buffer
