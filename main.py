@@ -137,7 +137,7 @@ def main():
                         "make_pdf"
                     )
                     make_btn.classes(add="w-[150px]")
-                    widgets.DownloadButton(data).mark("download")
+                    widgets.DownloadButton().mark("download")
             ui.card().classes("w-full h-full flex justify-center").mark("preview")
 
 
