@@ -7,9 +7,10 @@ from nicegui import ElementFilter, app, ui
 import internals.widgets as widgets
 from infos import NAME, VERSION, WEBSITE
 from internals.async_qr import make
-from internals.data_container import DataContainer
+from internals.data_container import Data
 
-data = DataContainer()
+
+data = Data()
 
 
 async def make_preview(event):
@@ -77,7 +78,9 @@ async def make_pdf(event):
 @ui.page("/")
 def main():
     ui.query(".nicegui-content").classes("h-screen w-screen")
-    with ui.row().classes("h -[20px] w-full items-center"):
+
+    # Title bar
+    with ui.row().classes("h-[20px] w-full items-center"):
         ui.label(f"🚀{NAME}").classes("text-2xl")
         ui.space()
         ui.label(VERSION)
@@ -93,37 +96,32 @@ def main():
                 label="File di sfondo (.pdf)",
                 max_files=1,
                 auto_upload=True,
-                on_upload=data.on_upd_bg,
+                on_upload=data.on_upl_bg,
             )
 
             widgets.LinksContainer(data.on_upd_links)
 
         with widgets.MainColumn("Stile"):
             with ui.card():
-                widgets.AccuracySelector(data)
+                widgets.AccuracySelector().radio.bind_value(data, "err")
                 with ui.row().classes("w-full items-center gap-4"):
-                    ui.label("Primo piano")
-                    widgets.ColorSelector(data.on_upd_fg_col, data.style["dark"])
-                    ui.label("Sfondo")
-                    widgets.ColorSelector(
-                        data.on_upd_bg_col,
-                        data.style["light"],
-                        alpha_callback=data.on_upd_bg_alpha,
-                    )
+                    cs = widgets.ColorSelector("Primo piano")
+                    cs.cp.bind_value(data, "fg_color")
+                    cs = widgets.ColorSelector("Sfondo", allow_alpha=True)
+                    cs.cp.bind_value(data, "bg_color")
 
                 with ui.grid(columns="1fr 2fr 1fr 2fr").classes(
-                    "w-full justify-items-center align-items-center"
+                    "w-full justify-items-center"
                 ):
-                    widgets.NumberSlider("x", data.on_upd_x, data.x)
-                    widgets.NumberSlider("y", data.on_upd_y, data.y)
+                    widgets.NumberSlider("x").bind_value(data, "x")
+                    widgets.NumberSlider("y").bind_value(data, "y")
+                    widgets.NumberSlider("Dimensioni", min=1).bind_value(data, "d")
+                    widgets.NumberKnob("Ruota").bind_value(data, "r")
 
-                    widgets.NumberSlider("Dimensioni", data.on_upd_d, data.d, min=1)
-                    widgets.NumberKnob("Ruota", data.on_upd_r, data.r)
-
-            with widgets.MainColumn("Opzioni pdf").classes("w-full"):
+            with widgets.MainColumn("Logo").classes("w-full"):
                 with ui.card().classes("w-full"):
-                    ui.switch('Rimuovi immagini duplicate')
-                    ui.switch('Comprimi content streams')
+                    ui.switch("Rimuovi immagini duplicate", value=True)
+                    ui.switch("Comprimi content streams", value=True)
 
         with widgets.MainColumn("Anteprima") as col:
             col.classes("flex-grow")  # fill remaining space
@@ -144,11 +142,11 @@ def main():
 
 
 app.native.settings["ALLOW_DOWNLOADS"] = True
-app.on_connect(lambda event: app.native.main_window.maximize())
+# app.on_connect(lambda event: app.native.main_window.maximize())
 
 if __name__ in ["__main__", "__mp_main__"]:
     ui.run(
         title=NAME,
-        # reload=False,
+        reload=True,
         # native=True,
     )

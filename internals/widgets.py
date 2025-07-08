@@ -49,46 +49,46 @@ class LinksContainer(ui.card):
 
 
 class AccuracySelector(ui.row):
-    def __init__(self, data, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.classes("w-full items-center gap-4").style("width: 100%")
         with self:
             ui.label("Accuratezza").classes("whitespace-nowrap")
 
             m = len(QR_ERRORS)
-            self.radio = ui.radio(list(range(1, m + 1)), value=m).props("inline")
-            self.radio.on_value_change(data.on_upd_err)
+            self.radio = ui.radio(list(range(1, m + 1))).props("inline")
             ui.space()
-            with ui.icon("sym_r_help").classes("text-xl"):
-                ui.tooltip(
-                    "Un valore più alto risulta in un QR code più grande ma che verrà riconosciuto meglio. Questo è estremamente consigliato se un logo è incluso al centro del QR code."
-                ).style("width: 30em")
+            ui.icon("sym_r_help").classes("text-xl").tooltip(
+                "Un valore più alto risulta in un QR code più grande ma che verrà riconosciuto meglio. Questo è estremamente consigliato se un logo è incluso al centro del QR code."
+            )  # .style("width: 30em")
 
 
 class ColorSelector(ui.button):
-    def __init__(self, callback, color, alpha_callback=None, **kwargs):
-        super().__init__(color=color, **kwargs)
-        self.callback = callback
+    def __init__(self, label, allow_alpha=False, **kwargs):
+        self.label = ui.label(label)
+        super().__init__(**kwargs)
         with self:
-            self.ico = ui.icon("palette").style(f"color: {self.bg2fg(color)}")
-            self.cp = ui.color_picker(value=color, on_pick=self.on_pick)
-        if alpha_callback is not None:
-            switch = ui.switch("Trasparente").on_value_change(alpha_callback)
+            self.ico = ui.icon("palette")
+            self.cp = ui.color_picker(on_pick=self.on_pick)
+        if allow_alpha:
+            switch = ui.switch("Trasparente")
             self.bind_enabled_from(switch, "value", lambda v: not v)
+        self.on_pick(None)
 
     @staticmethod
-    def bg2fg(bg):
-        r = int(bg[1:3], 16) / 256
-        g = int(bg[3:5], 16) / 256
-        b = int(bg[5:7], 16) / 256
+    def smart_invert(color):
+        r = int(color[1:3], 16) / 256
+        g = int(color[3:5], 16) / 256
+        b = int(color[5:7], 16) / 256
         lum = rgb_to_hls(r, g, b)[1]  # luminance
         return "#000000" if lum > 0.5 else "#ffffff"
 
     def on_pick(self, event):
-        bg = event.color
-        self.classes(f"!bg-[{bg}]")
-        self.ico.style(f"color: {self.bg2fg(bg)}")
-        self.callback(event)
+        color = (
+            event.color if event is not None else "#ffffff"
+        )  # todo: fix color being False
+        self.classes(f"!bg-[{color}]")
+        self.ico.style(f"color: {self.smart_invert(color)}")
 
 
 class MakeButton(ui.button):
@@ -104,10 +104,9 @@ class MakeButton(ui.button):
 
 
 class DownloadButton(ui.button):
-    def __init__(self, data_container, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(icon="r_file_download", *args, **kwargs)
         self.on_click(self.download)
-        data_container.link_dl_btn(self)
         self.reset()
 
     def set_data(self, data):
@@ -134,18 +133,14 @@ class DownloadButton(ui.button):
 
 
 class NumberSlider(ui.number):
-    def __init__(self, lab, callback, value, min=0):
-        super().__init__(label=lab, min=min, max=100, value=value)
-        self.slid = (
-            ui.slider(min=0, max=100, value=value).style("width:100%").bind_value(self)
-        )
-        self.on_value_change(callback)
+    def __init__(self, label, min=0, max=100):
+        super().__init__(label=label, min=min, max=max)
+        self.slid = ui.slider(min=min, max=max).style("width:100%").bind_value(self)
 
 
 class NumberKnob(ui.number):
-    def __init__(self, lab, callback, value):
-        super().__init__(label=lab, min=0, max=360, value=value)
+    def __init__(self, label):
+        super().__init__(label=label, min=0, max=360)
         self.knob = ui.knob(
-            min=0, max=360, value=value, center_color="white", track_color="grey-4"
+            min=0, max=360, center_color="white", track_color="grey-4"
         ).bind_value(self)
-        self.on_value_change(callback)
