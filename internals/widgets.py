@@ -22,12 +22,18 @@ class LinksContainer(ui.card):
         self.classes("w-full flex-grow min-h-0")
         with self:
             with ui.column().classes("h-full w-full"):
-                ui.label("Links").classes("text-xl")
+                with ui.row():
+                    ui.label("Links").classes("text-xl")
+                    ui.space()
+                    self.chip_ok = ui.chip(
+                        "0", color="green", icon="r_thumb_up"
+                    ).classes("text-2xs").props("dense")
+                    self.chip_no = ui.chip(
+                        "0", color="red", icon="r_thumb_down"
+                    ).classes("text-2xs").props("dense")
+
                 self.cm = ui.codemirror("", language="HTTP", on_change=self.check_links)
                 self.cm.classes("w-full flex-grow").style("max-width:18rem")
-                with ui.row():
-                    self.chip_ok = ui.chip(color="green", icon="r_thumb_up")
-                    self.chip_no = ui.chip(color="red", icon="r_thumb_down")
 
     def check_links(self, event):
         indices = self.link_callback(event)
@@ -40,12 +46,8 @@ class LinksContainer(ui.card):
 
         ui.run_javascript(js)
 
-        self.chip_ok.set_text(
-            f"{len(indices.valid)} valid{'o' if len(indices.valid) == 1 else 'i'}"
-        )
-        self.chip_no.set_text(
-            f"{len(indices.invalid)} non valid{'o' if len(indices.invalid) == 1 else 'i'}"
-        )
+        self.chip_ok.set_text(f"{len(indices.valid)}")
+        self.chip_no.set_text(f"{len(indices.invalid)}")
 
 
 class AccuracySelector(ui.row):
@@ -73,7 +75,6 @@ class ColorSelector(ui.button):
         if allow_alpha:
             switch = ui.switch("Trasparente")
             self.bind_enabled_from(switch, "value", lambda v: not v)
-        self.on_pick(None)
 
     @staticmethod
     def smart_invert(color):

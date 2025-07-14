@@ -96,16 +96,26 @@ def main():
                 on_upload=data.on_upl_bg,
             )
 
+            ui.upload(
+                label="Logo (.pdf)",
+                max_files=1,
+                auto_upload=True,
+                on_upload=data.on_upl_logo,
+            )
+
             widgets.LinksContainer(data.on_upd_links)
 
         with widgets.MainColumn("Stile"):
-            with ui.card():
+            with ui.card().classes("w-full"):
+                ui.label("Codice QR").classes("text-l")
                 widgets.AccuracySelector().radio.bind_value(data, "err")
                 with ui.row().classes("w-full items-center gap-4"):
                     cs = widgets.ColorSelector("Primo piano")
                     cs.cp.bind_value(data, "fg_color")
+                    cs.on_pick(None)
                     cs = widgets.ColorSelector("Sfondo", allow_alpha=True)
                     cs.cp.bind_value(data, "bg_color")
+                    cs.on_pick(None)  # trigger button color selection
 
                 with ui.grid(columns="1fr 2fr 1fr 2fr").classes(
                     "w-full justify-items-center"
@@ -115,10 +125,15 @@ def main():
                     widgets.NumberSlider("Dimensioni", min=1).bind_value(data, "d")
                     widgets.NumberKnob("Ruota").bind_value(data, "r")
 
-            with widgets.MainColumn("Logo").classes("w-full"):
-                with ui.card().classes("w-full"):
-                    ui.switch("Rimuovi immagini duplicate", value=True)
-                    ui.switch("Comprimi content streams", value=True)
+            with ui.card().classes("w-full"):
+                ui.label("Logo").classes("text-l")
+                with ui.grid(columns="1fr 2fr 1fr 2fr").classes(
+                    "w-full justify-items-center"
+                ):
+                    widgets.NumberSlider("x").bind_value(data, "x")
+                    widgets.NumberSlider("y").bind_value(data, "y")
+                    widgets.NumberSlider("Dimensioni", min=1).bind_value(data, "d")
+                    widgets.NumberKnob("Ruota").bind_value(data, "r")
 
         with widgets.MainColumn("Anteprima") as col:
             col.classes("flex-grow")  # fill remaining space
