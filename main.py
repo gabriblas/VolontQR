@@ -24,7 +24,7 @@ async def make_preview(event):
             ui.skeleton("text").classes("text-subtitle1 w-1/2")
             ui.skeleton("text").classes("text-caption")
 
-    pdf_bytes = await make(data, [], preview=True, optimize=False)
+    pdf_bytes = await make(container, [], preview=True, optimize=False)
 
     pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
     pdf_data_url = f"data:application/pdf;base64,{pdf_base64}"
@@ -60,16 +60,16 @@ async def make_pdf(event):
         spin = ui.spinner(color="white")
 
     pages = list()
-    data.pdf_bytes = None
-    percentage_thread = Thread(target=percentage, args=(data, pages, make_btn))
+    container.pdf_bytes = None
+    percentage_thread = Thread(target=percentage, args=(container, pages, make_btn))
     percentage_thread.start()
-    data.pdf_bytes = await make(data, pages, preview=False, optimize=True)
+    container.pdf_bytes = await make(container, pages, preview=False, optimize=True)
 
     percentage_thread.join()
     make_btn.enable()
     dl_btn.remove(spin)
     dl_btn.set_icon(icon)
-    dl_btn.set_data(data.pdf_bytes)
+    dl_btn.set_data(container.pdf_bytes)
 
 
 @ui.page("/")
@@ -93,47 +93,51 @@ def main():
                 label="File di sfondo (.pdf)",
                 max_files=1,
                 auto_upload=True,
-                on_upload=data.on_upl_bg,
+                on_upload=container.bg.on_update,
             )
 
             ui.upload(
                 label="Logo (.pdf)",
                 max_files=1,
                 auto_upload=True,
-                on_upload=data.on_upl_logo,
+                on_upload=container.logo.on_update,
             )
 
-            widgets.LinksContainer(data.on_upd_links)
+            widgets.LinksContainer(container.on_upd_links)
 
         with widgets.MainColumn("Stile"):
             with ui.card().classes("w-full"):
                 ui.label("Codice QR").classes("text-l")
-                widgets.AccuracySelector().radio.bind_value(data, "err")
+                widgets.AccuracySelector().radio.bind_value(container, "err")
                 with ui.row().classes("w-full items-center gap-4"):
                     cs = widgets.ColorSelector("Primo piano")
-                    cs.cp.bind_value(data, "fg_color")
+                    cs.cp.bind_value(container, "fg_color")
                     cs.on_pick(None)
                     cs = widgets.ColorSelector("Sfondo", allow_alpha=True)
-                    cs.cp.bind_value(data, "bg_color")
+                    cs.cp.bind_value(container, "bg_color")
                     cs.on_pick(None)  # trigger button color selection
 
                 with ui.grid(columns="1fr 2fr 1fr 2fr").classes(
                     "w-full justify-items-center"
                 ):
-                    widgets.NumberSlider("x").bind_value(data, "x")
-                    widgets.NumberSlider("y").bind_value(data, "y")
-                    widgets.NumberSlider("Dimensioni", min=1).bind_value(data, "d")
-                    widgets.NumberKnob("Ruota").bind_value(data, "r")
+                    widgets.NumberSlider("x").bind_value(container.bg, "x")
+                    widgets.NumberSlider("y").bind_value(container.bg, "y")
+                    widgets.NumberSlider("Dimensioni", min=1).bind_value(
+                        container.bg, "d"
+                    )
+                    widgets.NumberKnob("Ruota").bind_value(container.bg, "r")
 
             with ui.card().classes("w-full"):
                 ui.label("Logo").classes("text-l")
                 with ui.grid(columns="1fr 2fr 1fr 2fr").classes(
                     "w-full justify-items-center"
                 ):
-                    widgets.NumberSlider("x").bind_value(data, "x")
-                    widgets.NumberSlider("y").bind_value(data, "y")
-                    widgets.NumberSlider("Dimensioni", min=1).bind_value(data, "d")
-                    widgets.NumberKnob("Ruota").bind_value(data, "r")
+                    widgets.NumberSlider("x").bind_value(container.logo, "x")
+                    widgets.NumberSlider("y").bind_value(container.logo, "y")
+                    widgets.NumberSlider("Dimensioni", min=1).bind_value(
+                        container.logo, "d"
+                    )
+                    widgets.NumberKnob("Ruota").bind_value(container.logo, "r")
 
         with widgets.MainColumn("Anteprima") as col:
             col.classes("flex-grow")  # fill remaining space
@@ -154,7 +158,7 @@ def main():
 
 
 if __name__ in ["__main__", "__mp_main__"]:
-    data = Data()
+    container = Data()
 
     app.native.settings["ALLOW_DOWNLOADS"] = True
     # app.on_connect(lambda event: app.native.main_window.maximize())

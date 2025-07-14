@@ -62,16 +62,16 @@ def assemble_pages(pages, optimize=True):
     return pdf_buffer.getvalue()
 
 
-async def make(data, pages, preview, optimize=True):
+async def make(container, pages, preview, optimize=True):
     # setup the parameters for parallel page generation
-    links = data.valid_links[:1] if preview else data.valid_links
+    links = container.valid_links[:1] if preview else container.valid_links
 
     make_page_special = partial(
         make_page,
-        error=data.error_level,
-        color=data.colors,
-        transform=data.transforms,
-        bg=data.bg.bytes,
+        error=container.error_level,
+        color=container.colors,
+        transform=container.bg.transform,
+        bg=container.bg.data,
     )
 
     # parallel page generation

@@ -1,52 +1,49 @@
 from collections import namedtuple
-from enum import StrEnum
 from io import BytesIO
 
 from nicegui import binding
 from pypdf import PdfReader, PdfWriter
 from validators import url as check_url
+from dataclasses import field
 
 QR_ERRORS = ["l", "m", "q", "h"]
 Transforms = namedtuple("Transforms", ["x", "y", "d", "r"])
 Colors = namedtuple("Colors", ["fg", "bg"])
 
 
+@binding.bindable_dataclass
 class PdfData:
-    def __init__(self, content):
-        self.page = PdfReader(content).pages[0]
+    data: bytes = None
+    x: float = 50
+    y: float = 50
+    d: float = 50
+    r: float = 0
 
-        self.height = self.page.mediabox.height
-        self.width = self.page.mediabox.width
-
+    def on_update(self, event):
         tmp_buf = BytesIO()
         tmp_writer = PdfWriter()
-        tmp_writer.add_page(self.page)
+
+        tmp_writer.add_page(PdfReader(event.content).pages[0])
         tmp_writer.write(tmp_buf)
-        self.bytes = tmp_buf.getvalue()
+        self.data = tmp_buf.getvalue()
+
+    @property
+    def transform(self):
+        return Transforms(self.x / 100, self.y / 100, self.d / 100, -self.r)
 
 
 @binding.bindable_dataclass
 class Data:
     fg_color: str = "#000000"
     bg_color: str = "#ffffff"
-    x: float = 50
-    y: float = 50
-    d: float = 50
-    r: float = 0
     err: int = 4
 
     valid_links = None
     all_links = None
 
-    bg: PdfData = None
-    logo: PdfData = None
+    bg: PdfData = field(default_factory=PdfData)
+    logo: PdfData = field(default_factory=PdfData)
     output: bytes = None
-
-    def on_upl_bg(self, event):
-        self.bg = PdfData(event.content)
-
-    def on_upl_logo(self, event):
-        self.logo = PdfData(event.content)
 
     def on_upd_links(self, event):
         self.all_links = event.value.split("\n")
@@ -68,7 +65,3 @@ class Data:
     @property
     def colors(self):
         return Colors(self.fg_color, self.bg_color)
-
-    @property
-    def transforms(self):
-        return Transforms(self.x / 100, self.y / 100, self.d / 100, -self.r)
