@@ -71,4 +71,4 @@ class Data:
 
     @property
     def transforms(self):
-        return Transforms(self.x / 100, self.y / 100, self.d / 100, self.r)
+        return Transforms(self.x / 100, self.y / 100, self.d / 100, -self.r)
