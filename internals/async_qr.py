@@ -7,37 +7,50 @@ from pypdf import PageObject, PdfReader, PdfWriter, Transformation
 from segno import make as make_qr
 
 
-def make_page(link, error, color, transform, bg):
-    bg = PdfReader(BytesIO(bg)).pages[0]
+def apply_transform(stamp, ref, tx):
+
+    # scaling
+    s = (
+        tx.d
+        * max(ref.mediabox.width, ref.mediabox.height)
+        / max(stamp.mediabox.width, stamp.mediabox.height)
+    )
+    stamp.add_transformation(Transformation().scale(s, s), expand=True)
+
+    # rotation
+    xo = stamp.mediabox.width / 2
+    yo = stamp.mediabox.height / 2
+    stamp.add_transformation(
+        Transformation().translate(-xo, -yo).rotate(tx.r).translate(xo, yo)
+    )
+
+    # translation
+    x = ref.mediabox.width * tx.x - xo
+    y = ref.mediabox.height * tx.y - yo
+    stamp.add_transformation(Transformation().translate(x, y))
+
+
+def make_page(link, error, color, bg, qr_tx, logo, logo_tx):
+    bg_page = PdfReader(BytesIO(bg)).pages[0]
+    if logo is not None:
+        logo_stamp = PdfReader(BytesIO(logo)).pages[0]
 
     buffer = BytesIO()
     qr = make_qr(link, error=error)
     qr.save(buffer, kind="pdf", dark=color.fg, light=color.bg)
-    stamp = PdfReader(buffer).pages[0]
+    qr_stamp = PdfReader(buffer).pages[0]
 
-    s = (
-        transform.d
-        * min(bg.mediabox.width, bg.mediabox.height)
-        / max(stamp.mediabox.height, stamp.mediabox.width)
-    )
-    stamp.add_transformation(Transformation().scale(s, s), expand=True)
-
-    xo = stamp.mediabox.width / 2
-    yo = stamp.mediabox.height / 2
-    stamp.add_transformation(
-        Transformation().translate(-xo, -yo).rotate(transform.r).translate(xo, yo),
-        expand=True,
-    )
-
-    x = bg.mediabox.width * transform.x - xo
-    y = bg.mediabox.height * transform.y - yo
-    stamp.add_transformation(Transformation().translate(x, y), expand=True)
+    apply_transform(qr_stamp, bg_page, qr_tx)
+    if logo is not None:
+        apply_transform(logo_stamp, qr_stamp, logo_tx)
 
     new_page = PageObject.create_blank_page(
-        width=bg.mediabox.width, height=bg.mediabox.height
+        width=bg_page.mediabox.width, height=bg_page.mediabox.height
     )
-    new_page.merge_page(bg)
-    new_page.merge_page(stamp, expand=True, over=True)
+    new_page.merge_page(bg_page)
+    if logo is not None:
+        qr_stamp.merge_page(logo_stamp, expand=True, over=True)
+    new_page.merge_page(qr_stamp, expand=True, over=True)
 
     temp_writer = PdfWriter()
     temp_writer.add_page(new_page)
@@ -69,10 +82,13 @@ async def make(container, pages, preview, optimize=True):
     make_page_special = partial(
         make_page,
         error=container.error_level,
-        color=container.colors,
-        transform=container.bg.transform,
-        bg=container.bg.data,
+        color=container.colors.to_internals(),
+        bg=container.bg,
+        qr_tx=container.qr_tx.to_internals(),
+        logo=container.logo,
+        logo_tx=container.logo_tx.to_internals(),
     )
+    make_page_special(links[0])
 
     # parallel page generation
     loop = asyncio.get_running_loop()

@@ -15,7 +15,7 @@ def validating(func):
     @wraps(func)
     async def decorated(event):
         kwargs = dict(type="negative", position="bottom-right")
-        if container.bg.data is None:
+        if container.bg is None:
             ui.notify("Nessuno sfondo caricato.", **kwargs)
         elif len(container.all_links) == 0:
             ui.notify("Nessun link specificato", **kwargs)
@@ -112,14 +112,14 @@ def main():
                 label="File di sfondo (.pdf)",
                 max_files=1,
                 auto_upload=True,
-                on_upload=container.bg.on_update,
+                on_upload=container.on_upd_bg,
             ).mark("bg")
 
             ui.upload(
                 label="Logo (.pdf)",
                 max_files=1,
                 auto_upload=True,
-                on_upload=container.logo.on_update,
+                on_upload=container.on_upd_logo,
             ).mark("logo")
 
             widgets.LinksContainer(container.on_upd_links)
@@ -130,33 +130,33 @@ def main():
                 widgets.AccuracySelector().radio.bind_value(container, "err")
                 with ui.row().classes("w-full items-center gap-4"):
                     cs = widgets.ColorSelector("Primo piano")
-                    cs.cp.bind_value(container, "fg_color")
+                    cs.cp.bind_value(container.colors, "fg")
                     cs.on_pick(None)
                     cs = widgets.ColorSelector("Sfondo", allow_alpha=True)
-                    cs.cp.bind_value(container, "bg_color")
+                    cs.cp.bind_value(container.colors, "bg")
                     cs.on_pick(None)  # trigger button color selection
 
                 with ui.grid(columns="1fr 2fr 1fr 2fr").classes(
                     "w-full justify-items-center"
                 ):
-                    widgets.NumberSlider("x").bind_value(container.bg, "x")
-                    widgets.NumberSlider("y").bind_value(container.bg, "y")
+                    widgets.NumberSlider("x").bind_value(container.qr_tx, "x")
+                    widgets.NumberSlider("y").bind_value(container.qr_tx, "y")
                     widgets.NumberSlider("Dimensioni", min=1).bind_value(
-                        container.bg, "d"
+                        container.qr_tx, "d"
                     )
-                    widgets.NumberKnob("Ruota").bind_value(container.bg, "r")
+                    widgets.NumberKnob("Ruota").bind_value(container.qr_tx, "r")
 
             with ui.card().classes("w-full"):
                 ui.label("Logo").classes("text-l")
                 with ui.grid(columns="1fr 2fr 1fr 2fr").classes(
                     "w-full justify-items-center"
                 ):
-                    widgets.NumberSlider("x").bind_value(container.logo, "x")
-                    widgets.NumberSlider("y").bind_value(container.logo, "y")
+                    widgets.NumberSlider("x").bind_value(container.logo_tx, "x")
+                    widgets.NumberSlider("y").bind_value(container.logo_tx, "y")
                     widgets.NumberSlider("Dimensioni", min=1).bind_value(
-                        container.logo, "d"
+                        container.logo_tx, "d"
                     )
-                    widgets.NumberKnob("Ruota").bind_value(container.logo, "r")
+                    widgets.NumberKnob("Ruota").bind_value(container.logo_tx, "r")
 
         with widgets.MainColumn("Anteprima") as col:
             col.classes("flex-grow")  # fill remaining space

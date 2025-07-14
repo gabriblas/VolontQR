@@ -7,42 +7,53 @@ from validators import url as check_url
 from dataclasses import field
 
 QR_ERRORS = ["l", "m", "q", "h"]
-Transforms = namedtuple("Transforms", ["x", "y", "d", "r"])
-Colors = namedtuple("Colors", ["fg", "bg"])
+CInt = namedtuple("CInt", ["fg", "bg"])
+TInt = namedtuple("TInt", ["x", "y", "d", "r"])
+
+
+def pdf2bytes(pdf):
+    tmp_buf = BytesIO()
+    tmp_writer = PdfWriter()
+
+    tmp_writer.add_page(PdfReader(pdf).pages[0])
+    tmp_writer.write(tmp_buf)
+    return tmp_buf.getvalue()
 
 
 @binding.bindable_dataclass
-class PdfData:
-    data: bytes = None
+class Transform:
     x: float = 50
     y: float = 50
     d: float = 50
     r: float = 0
 
-    def on_update(self, event):
-        tmp_buf = BytesIO()
-        tmp_writer = PdfWriter()
+    def to_internals(self):
+        return TInt(self.x / 100, self.y / 100, self.d / 100, -self.r)
 
-        tmp_writer.add_page(PdfReader(event.content).pages[0])
-        tmp_writer.write(tmp_buf)
-        self.data = tmp_buf.getvalue()
 
-    @property
-    def transform(self):
-        return Transforms(self.x / 100, self.y / 100, self.d / 100, -self.r)
+@binding.bindable_dataclass
+class Colors:
+    fg: str = "#000000"
+    bg: str = "#ffffff"
+
+    def to_internals(self):
+        return CInt(self.fg, self.bg)
 
 
 @binding.bindable_dataclass
 class Data:
-    fg_color: str = "#000000"
-    bg_color: str = "#ffffff"
+    bg: bytes = None
+    logo: bytes = None
+
+    colors: Colors = field(default_factory=Colors)
     err: int = 4
 
-    valid_links = None
-    all_links = None
+    qr_tx: Transform = field(default_factory=Transform)
+    logo_tx: Transform = field(default_factory=Transform)
 
-    bg: PdfData = field(default_factory=PdfData)
-    logo: PdfData = field(default_factory=PdfData)
+    valid_links: list = field(default_factory=list)
+    all_links: list = field(default_factory=list)
+
     output: bytes = None
 
     def on_upd_links(self, event):
@@ -58,10 +69,12 @@ class Data:
                 invalid_indx.append(i)
         return namedtuple("Indices", ["valid", "invalid"])(valid_indx, invalid_indx)
 
+    def on_upd_bg(self, event):
+        self.bg = pdf2bytes(event.content)
+
+    def on_upd_logo(self, event):
+        self.logo = pdf2bytes(event.content)
+
     @property
     def error_level(self):
         return QR_ERRORS[self.err - 1]
-
-    @property
-    def colors(self):
-        return Colors(self.fg_color, self.bg_color)
