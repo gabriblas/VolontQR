@@ -10,9 +10,6 @@ from internals.async_qr import make
 from internals.data_container import Data
 
 
-data = Data()
-
-
 async def make_preview(event):
     card = list(ElementFilter(kind=ui.card, marker="preview"))[0]
     try:
@@ -141,10 +138,11 @@ def main():
             ui.card().classes("w-full h-full flex justify-center").mark("preview")
 
 
-app.native.settings["ALLOW_DOWNLOADS"] = True
-# app.on_connect(lambda event: app.native.main_window.maximize())
-
 if __name__ in ["__main__", "__mp_main__"]:
+    data = Data()
+
+    app.native.settings["ALLOW_DOWNLOADS"] = True
+    # app.on_connect(lambda event: app.native.main_window.maximize())
     ui.run(
         title=NAME,
         reload=True,
