@@ -6,7 +6,9 @@ from nicegui import binding
 from pypdf import PdfReader, PdfWriter
 from validators import url as check_url
 
-QR_ERRORS = StrEnum("QR_errors", "l m q h")
+QR_ERRORS = ["l", "m", "q", "h"]
+Transforms = namedtuple("Transforms", ["x", "y", "d", "r"])
+Colors = namedtuple("Colors", ["fg", "bg"])
 
 
 class PdfData:
@@ -58,3 +60,15 @@ class Data:
             else:
                 invalid_indx.append(i)
         return namedtuple("Indices", ["valid", "invalid"])(valid_indx, invalid_indx)
+
+    @property
+    def error_level(self):
+        return QR_ERRORS[self.err - 1]
+
+    @property
+    def colors(self):
+        return Colors(self.fg_color, self.bg_color)
+
+    @property
+    def transforms(self):
+        return Transforms(self.x / 100, self.y / 100, self.d / 100, self.r)
