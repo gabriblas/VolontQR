@@ -1,6 +1,7 @@
 import base64
 from threading import Thread
 from time import sleep
+from functools import wraps
 
 from nicegui import ElementFilter, app, ui
 
@@ -10,6 +11,23 @@ from internals.async_qr import make
 from internals.data_container import Data
 
 
+def validating(func):
+    @wraps(func)
+    async def decorated(event):
+        kwargs = dict(type="negative", position="bottom-right")
+        if container.bg.data is None:
+            ui.notify("Nessuno sfondo caricato.", **kwargs)
+        elif len(container.all_links) == 0:
+            ui.notify("Nessun link specificato", **kwargs)
+        elif len(container.valid_links) == 0:
+            ui.notify("Nessun link valido specificato", **kwargs)
+        else:
+            return await func(event)
+
+    return decorated
+
+
+@validating
 async def make_preview(event):
     card = list(ElementFilter(kind=ui.card, marker="preview"))[0]
     try:
@@ -49,6 +67,7 @@ def percentage(data, pages, btn: widgets.MakeButton):
     btn.set_text(original)
 
 
+@validating
 async def make_pdf(event):
     make_btn = list(ElementFilter(kind=ui.button, marker="make_pdf"))[0]
     dl_btn = list(ElementFilter(kind=widgets.DownloadButton, marker="download"))[0]
@@ -94,14 +113,14 @@ def main():
                 max_files=1,
                 auto_upload=True,
                 on_upload=container.bg.on_update,
-            )
+            ).mark("bg")
 
             ui.upload(
                 label="Logo (.pdf)",
                 max_files=1,
                 auto_upload=True,
                 on_upload=container.logo.on_update,
-            )
+            ).mark("logo")
 
             widgets.LinksContainer(container.on_upd_links)
 
