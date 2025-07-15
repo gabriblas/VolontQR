@@ -25,12 +25,16 @@ class LinksContainer(ui.card):
                 with ui.row():
                     ui.label("Links").classes("text-xl")
                     ui.space()
-                    self.chip_ok = ui.chip(
-                        "0", color="green", icon="r_thumb_up"
-                    ).classes("text-2xs").props('dense text-color="white"')
-                    self.chip_no = ui.chip(
-                        "0", color="red", icon="r_thumb_down"
-                    ).classes("text-2xs").props('dense text-color="white"')
+                    self.chip_ok = (
+                        ui.chip("0", color="green", icon="r_thumb_up")
+                        .classes("text-2xs")
+                        .props('dense text-color="white"')
+                    )
+                    self.chip_no = (
+                        ui.chip("0", color="red", icon="r_thumb_down")
+                        .classes("text-2xs")
+                        .props('dense text-color="white"')
+                    )
 
                 self.cm = ui.codemirror("", language="HTTP", on_change=self.check_links)
                 self.cm.classes("w-full flex-grow").style("max-width:18rem")
