@@ -78,7 +78,7 @@ async def make(container, pages, preview, optimize=True):
     # setup the parameters for parallel page generation
     links = container.valid_links[:1] if preview else container.valid_links
 
-    make_page_special = partial(
+    mkpage_special = partial(
         make_page,
         error=container.error_level,
         color=container.colors.to_internals(),
@@ -93,7 +93,7 @@ async def make(container, pages, preview, optimize=True):
 
     with ProcessPoolExecutor() as executor:
         # Submit all tasks
-        tasks = [loop.run_in_executor(executor, make_page_special, l) for l in links]
+        tasks = [loop.run_in_executor(executor, mkpage_special, link) for link in links]
 
         # Process tasks as they complete
         for future in asyncio.as_completed(tasks):
