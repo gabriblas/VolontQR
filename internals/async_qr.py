@@ -8,48 +8,47 @@ from segno import make as make_qr
 
 
 def apply_transform(stamp, ref, tx):
-
-    # scaling
     s = (
         tx.d
-        * max(ref.mediabox.width, ref.mediabox.height)
-        / max(stamp.mediabox.width, stamp.mediabox.height)
+        * min(ref.mediabox.width, ref.mediabox.height)
+        / max(stamp.mediabox.height, stamp.mediabox.width)
     )
     stamp.add_transformation(Transformation().scale(s, s), expand=True)
 
-    # rotation
     xo = stamp.mediabox.width / 2
     yo = stamp.mediabox.height / 2
     stamp.add_transformation(
-        Transformation().translate(-xo, -yo).rotate(tx.r).translate(xo, yo)
+        Transformation().translate(-xo, -yo).rotate(tx.r).translate(xo, yo),
+        expand=True,
     )
 
-    # translation
     x = ref.mediabox.width * tx.x - xo
     y = ref.mediabox.height * tx.y - yo
-    stamp.add_transformation(Transformation().translate(x, y))
+    stamp.add_transformation(Transformation().translate(x, y), expand=True)
 
 
 def make_page(link, error, color, bg, qr_tx, logo, logo_tx):
     bg_page = PdfReader(BytesIO(bg)).pages[0]
-    if logo is not None:
-        logo_stamp = PdfReader(BytesIO(logo)).pages[0]
 
+    # Create QR code
     buffer = BytesIO()
     qr = make_qr(link, error=error)
     qr.save(buffer, kind="pdf", dark=color.fg, light=color.bg)
     qr_stamp = PdfReader(buffer).pages[0]
 
-    apply_transform(qr_stamp, bg_page, qr_tx)
+    # add logo if necessary
     if logo is not None:
+        logo_stamp = PdfReader(BytesIO(logo)).pages[0]
         apply_transform(logo_stamp, qr_stamp, logo_tx)
+        qr_stamp.merge_page(logo_stamp, expand=True, over=True)
 
+    apply_transform(qr_stamp, bg_page, qr_tx)
+
+    # merge pages
     new_page = PageObject.create_blank_page(
         width=bg_page.mediabox.width, height=bg_page.mediabox.height
     )
     new_page.merge_page(bg_page)
-    if logo is not None:
-        qr_stamp.merge_page(logo_stamp, expand=True, over=True)
     new_page.merge_page(qr_stamp, expand=True, over=True)
 
     temp_writer = PdfWriter()
@@ -88,7 +87,6 @@ async def make(container, pages, preview, optimize=True):
         logo=container.logo,
         logo_tx=container.logo_tx.to_internals(),
     )
-    make_page_special(links[0])
 
     # parallel page generation
     loop = asyncio.get_running_loop()
