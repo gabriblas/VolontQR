@@ -12,12 +12,12 @@ TInt = namedtuple("TInt", ["x", "y", "d", "r"])
 
 
 def pdf2bytes(pdf):
-    tmp_buf = BytesIO()
-    tmp_writer = PdfWriter()
-
-    tmp_writer.add_page(PdfReader(pdf).pages[0])
-    tmp_writer.write(tmp_buf)
-    return tmp_buf.getvalue()
+    pdfpage = PdfReader(pdf).pages[0]
+    with PdfWriter() as tmp_writer:
+        with BytesIO() as tmp_buf:
+            tmp_writer.add_page(pdfpage)
+            tmp_writer.write(tmp_buf)
+            return tmp_buf.getvalue()
 
 
 @binding.bindable_dataclass
