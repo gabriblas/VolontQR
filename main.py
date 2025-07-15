@@ -22,6 +22,12 @@ def validating(func):
         elif len(container.valid_links) == 0:
             ui.notify("Nessun link valido specificato", **kwargs)
         else:
+            if container.logo is not None and container.err < 3:
+                ui.notify(
+                    "Aggiungere un logo con una bassa accuratezza è sconsigliato!",
+                    position="bottom-right",
+                    type="warning",
+                )
             return await func(event)
 
     return decorated
