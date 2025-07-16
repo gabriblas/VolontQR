@@ -115,7 +115,7 @@ def main():
     with ui.row().classes("h-full w-full"):
         with widgets.MainColumn("Dati"):
             ui.upload(
-                label="File di sfondo (.pdf)",
+                label="Sfondo (.pdf)",
                 max_files=1,
                 auto_upload=True,
                 on_upload=container.on_upd_bg,
@@ -132,7 +132,7 @@ def main():
 
         with widgets.MainColumn("Stile"):
             with ui.card().classes("w-full"):
-                ui.label("Codice QR").classes("text-l")
+                ui.label("Codice QR").classes("text-xl")
                 widgets.AccuracySelector().radio.bind_value(container, "err")
                 with ui.row().classes("w-full items-center gap-4"):
                     cs = widgets.ColorSelector("Primo piano")
@@ -153,7 +153,7 @@ def main():
                     widgets.NumberKnob("Ruota").bind_value(container.qr_tx, "r")
 
             with ui.card().classes("w-full"):
-                ui.label("Logo").classes("text-l")
+                ui.label("Logo").classes("text-xl")
                 with ui.grid(columns="1fr 2fr 1fr 2fr").classes(
                     "w-full justify-items-center"
                 ):

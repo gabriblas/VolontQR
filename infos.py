@@ -1,4 +1,4 @@
 NAME = "VolontQR"
-VERSION = "v0.1"
+VERSION = "v0.2"
 AUTHOR = "Gabriele Blasi"
 WEBSITE = "https://github.com/gabriblas/VolontQR/"
