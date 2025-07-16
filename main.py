@@ -136,11 +136,9 @@ def main():
                 widgets.AccuracySelector().radio.bind_value(container, "err")
                 with ui.row().classes("w-full items-center gap-4"):
                     cs = widgets.ColorSelector("Primo piano")
-                    cs.cp.bind_value(container.colors, "fg")
-                    cs.on_pick(None)
+                    cs.bind_value(container.colors, "fg")
                     cs = widgets.ColorSelector("Sfondo", allow_alpha=True)
-                    cs.cp.bind_value(container.colors, "bg")
-                    cs.on_pick(None)  # trigger button color selection
+                    cs.bind_value(container.colors, "bg")
 
                 with ui.grid(columns="1fr 2fr 1fr 2fr").classes(
                     "w-full justify-items-center"

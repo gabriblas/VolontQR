@@ -1,6 +1,7 @@
 from colorsys import rgb_to_hls
 
 from nicegui import ui
+from nicegui.elements.mixins.value_element import ValueElement
 
 from .data_container import QR_ERRORS
 
@@ -69,16 +70,18 @@ class AccuracySelector(ui.row):
             )  # .style("width: 30em")
 
 
-class ColorSelector(ui.button):
+class ColorSelector(ValueElement, ui.button):
     def __init__(self, label, allow_alpha=False, **kwargs):
         self.label = ui.label(label)
-        super().__init__(**kwargs)
+        super().__init__(value="#ffffff", **kwargs)
+        self._prev = None
         with self:
             self.ico = ui.icon("palette")
             self.cp = ui.color_picker(on_pick=self.on_pick)
         if allow_alpha:
-            switch = ui.switch("Trasparente")
-            self.bind_enabled_from(switch, "value", lambda v: not v)
+            self.switch = ui.switch("Trasparente")
+            self.switch.on_value_change(self.toggle_alpha)
+            self.bind_enabled_from(self.switch, "value", lambda v: not v)
 
     @staticmethod
     def smart_invert(color):
@@ -88,12 +91,24 @@ class ColorSelector(ui.button):
         lum = rgb_to_hls(r, g, b)[1]  # luminance
         return "#000000" if lum > 0.5 else "#ffffff"
 
+    def bind_value(self, *args, **kwargs):
+        ret = super().bind_value(*args, **kwargs)
+        self.on_pick(None)
+        return ret
+
     def on_pick(self, event):
-        color = (
-            event.color if event is not None else "#ffffff"
-        )  # todo: fix color being False
-        self.classes(f"!bg-[{color}]")
-        self.ico.style(f"color: {self.smart_invert(color)}")
+        self.classes(remove=f"!bg-[{self.value}]")
+        if event is not None:
+            self.value = event.color
+        self.classes(add=f"!bg-[{self.value}]")
+        self.ico.style(f"color: {self.smart_invert(self.value)}")
+
+    def toggle_alpha(self, event):
+        if isinstance(self.value, str):
+            self._prev = self.value
+            self.value = None
+        else:
+            self.value = self._prev
 
 
 class MakeButton(ui.button):
