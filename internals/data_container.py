@@ -1,69 +1,62 @@
 from collections import namedtuple
-from enum import StrEnum
 from io import BytesIO
 
 from nicegui import binding
 from pypdf import PdfReader, PdfWriter
 from validators import url as check_url
+from dataclasses import field
 
-QR_ERRORS = StrEnum("QR_errors", "l m q h")
+QR_ERRORS = ["l", "m", "q", "h"]
+CInt = namedtuple("CInt", ["fg", "bg"])
+TInt = namedtuple("TInt", ["x", "y", "d", "r"])
+
+
+def pdf2bytes(pdf):
+    pdfpage = PdfReader(pdf).pages[0]
+    with PdfWriter() as tmp_writer:
+        with BytesIO() as tmp_buf:
+            tmp_writer.add_page(pdfpage)
+            tmp_writer.write(tmp_buf)
+            return tmp_buf.getvalue()
 
 
 @binding.bindable_dataclass
-class Data:
-    fg_color: str = "#000000"
-    bg_color: str = "#000000"
+class Transform:
     x: float = 50
     y: float = 50
     d: float = 50
     r: float = 0
+
+    def to_internals(self):
+        return TInt(self.x / 100, self.y / 100, self.d / 100, -self.r)
+
+
+@binding.bindable_dataclass
+class Colors:
+    fg: str = "#000000"
+    bg: str = "#ffffff"
+
+    def to_internals(self):
+        return CInt(self.fg, self.bg)
+
+
+@binding.bindable_dataclass
+class Data:
+    bg: bytes = None
+    logo: bytes = None
+
+    colors: Colors = field(default_factory=Colors)
     err: int = 4
 
-    bg = None
-    valid_links = None
-    all_links = None
-    pdf_bytes = None
+    qr_tx: Transform = field(default_factory=Transform)
+    logo_tx: Transform = field(default_factory=Transform)
 
-    dl_btn = None
+    valid_links: list = field(default_factory=list)
+    all_links: list = field(default_factory=list)
 
-
-class DataContainer:
-    def __init__(self):
-        self.style = dict(light="#ffffff", dark="#000000")
-        self.x = self.y = self.d = 50
-        self.r = 0
-        self.err = QR_ERRORS.m
-
-        self.bg = None
-        self.logo = None
-        self.valid_links = list()
-        self.all_links = list()
-        self.pdf_bytes = None
-
-    def on_upd_bg(self, event):
-        self.dl_btn.outdate()
-        self.bg = PdfReader(event.content).pages[0]
-        self.height = self.bg.mediabox.height
-        self.width = self.bg.mediabox.width
-
-        bg_buf = BytesIO()
-        temp_writer = PdfWriter()
-        temp_writer.add_page(self.bg)
-        temp_writer.write(bg_buf)
-        self.bg_bytes = bg_buf.getvalue()
-
-    def on_upd_logo(self, event):
-        self.dl_btn.outdate()
-        self.bg = PdfReader(event.content).pages[0]
-
-        bg_buf = BytesIO()
-        temp_writer = PdfWriter()
-        temp_writer.add_page(self.bg)
-        temp_writer.write(bg_buf)
-        self.logo = bg_buf.getvalue()
+    output: bytes = None
 
     def on_upd_links(self, event):
-        self.dl_btn.outdate()
         self.all_links = event.value.split("\n")
         self.valid_links = list()
         valid_indx = list()
@@ -76,42 +69,12 @@ class DataContainer:
                 invalid_indx.append(i)
         return namedtuple("Indices", ["valid", "invalid"])(valid_indx, invalid_indx)
 
-    def on_upd_err(self, event):
-        self.dl_btn.outdate()
-        self.err = list(QR_ERRORS)[event.value - 1]
+    def on_upd_bg(self, event):
+        self.bg = pdf2bytes(event.content)
 
-    def on_upd_fg_col(self, event):
-        self.dl_btn.outdate()
-        self.style.update(dark=event.color)
+    def on_upd_logo(self, event):
+        self.logo = pdf2bytes(event.content)
 
-    def on_upd_bg_col(self, event):
-        self.dl_btn.outdate()
-        self.style.update(light=event.color)
-
-    def on_upd_bg_alpha(self, event):
-        self.dl_btn.outdate()
-        pc = self.style["light"]
-        if event.value:
-            self.style.update(light=None)
-        else:
-            self.style.update(light=self._prev_col)
-        self._prev_col = pc
-
-    def on_upd_x(self, event):
-        self.dl_btn.outdate()
-        self.x = event.value
-
-    def on_upd_y(self, event):
-        self.dl_btn.outdate()
-        self.y = event.value
-
-    def on_upd_d(self, event):
-        self.dl_btn.outdate()
-        self.d = event.value
-
-    def on_upd_r(self, event):
-        self.dl_btn.outdate()
-        self.r = event.value
-
-    def link_dl_btn(self, btn):
-        self.dl_btn = btn
+    @property
+    def error_level(self):
+        return QR_ERRORS[self.err - 1]

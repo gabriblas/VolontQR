@@ -1,14 +1,39 @@
-from nicegui import ui, app, ElementFilter
 import base64
-from internals.data_container import DataContainer
-from internals.async_qr import make
-from time import sleep
 from threading import Thread
+from time import sleep
+from functools import wraps
+
+from nicegui import ElementFilter, app, ui
 
 import internals.widgets as widgets
 from infos import NAME, VERSION, WEBSITE
+from internals.async_qr import make
+from internals.data_container import Data
 
 
+def validating(func):
+    @wraps(func)
+    async def decorated(event):
+        kwargs = dict(type="negative", position="bottom-right")
+        if container.bg is None:
+            ui.notify("Nessuno sfondo caricato.", **kwargs)
+        elif len(container.all_links) == 0:
+            ui.notify("Nessun link specificato", **kwargs)
+        elif len(container.valid_links) == 0:
+            ui.notify("Nessun link valido specificato", **kwargs)
+        else:
+            if container.logo is not None and container.err < 3:
+                ui.notify(
+                    "Aggiungere un logo con una bassa accuratezza è sconsigliato!",
+                    position="bottom-right",
+                    type="warning",
+                )
+            return await func(event)
+
+    return decorated
+
+
+@validating
 async def make_preview(event):
     card = list(ElementFilter(kind=ui.card, marker="preview"))[0]
     try:
@@ -23,7 +48,7 @@ async def make_preview(event):
             ui.skeleton("text").classes("text-subtitle1 w-1/2")
             ui.skeleton("text").classes("text-caption")
 
-    pdf_bytes = await make(data, [], preview=True, optimize=False)
+    pdf_bytes = await make(container, [], preview=True, optimize=False)
 
     pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
     pdf_data_url = f"data:application/pdf;base64,{pdf_base64}"
@@ -36,14 +61,19 @@ async def make_preview(event):
         ).classes("h-full w-full").mark("preview")
 
 
-def percentage(pages, total, btn: widgets.MakeButton):
+def percentage(data, pages, btn: widgets.MakeButton):
     original = btn.text
+    total = len(data.valid_links)
     while len(pages) != total:
         btn.set_text(f"{len(pages) / total:.0%}")
+        sleep(0.1)
+    while data.pdf_bytes is None:
+        btn.set_text("Ottimizzazione...")
         sleep(0.1)
     btn.set_text(original)
 
 
+@validating
 async def make_pdf(event):
     make_btn = list(ElementFilter(kind=ui.button, marker="make_pdf"))[0]
     dl_btn = list(ElementFilter(kind=widgets.DownloadButton, marker="download"))[0]
@@ -55,64 +85,84 @@ async def make_pdf(event):
         spin = ui.spinner(color="white")
 
     pages = list()
-    percentage_thread = Thread(
-        target=percentage, args=(pages, len(data.valid_links), make_btn)
-    )
+    container.pdf_bytes = None
+    percentage_thread = Thread(target=percentage, args=(container, pages, make_btn))
     percentage_thread.start()
-    data.pdf_bytes = await make(data, pages, preview=False, optimize=True)
+    container.pdf_bytes = await make(container, pages, preview=False, optimize=True)
 
     percentage_thread.join()
     make_btn.enable()
     dl_btn.remove(spin)
     dl_btn.set_icon(icon)
-    dl_btn.set_data(data.pdf_bytes)
+    dl_btn.set_data(container.pdf_bytes)
 
-
-data = DataContainer()
 
 @ui.page("/")
 def main():
     ui.query(".nicegui-content").classes("h-screen w-screen")
-    with ui.row().classes("h -[20px] w-full items-center"):
+
+    # Title bar
+    with ui.row().classes("h-[20px] w-full items-center"):
         ui.label(f"🚀{NAME}").classes("text-2xl")
         ui.space()
         ui.label(VERSION)
-        ui.add_head_html('<link href="https://unpkg.com/eva-icons@1.1.3/style/eva-icons.css" rel="stylesheet" />')
-        with ui.link(target=WEBSITE).classes('text-2xl').tooltip('GitHub'):
-            ui.icon("eva-github").classes('fill-white scale-125 m-1')
+        ui.add_head_html(
+            '<link href="https://unpkg.com/eva-icons@1.1.3/style/eva-icons.css" rel="stylesheet" />'
+        )
+        with ui.link(target=WEBSITE).classes("text-2xl").tooltip("GitHub"):
+            ui.icon("eva-github").classes("fill-white scale-125 m-1")
 
     with ui.row().classes("h-full w-full"):
         with widgets.MainColumn("Dati"):
             ui.upload(
-                label="File di sfondo (.pdf)",
+                label="Sfondo (.pdf)",
                 max_files=1,
                 auto_upload=True,
-                on_upload=data.on_upd_bg,
-            )
+                on_upload=container.on_upd_bg,
+            ).mark("bg")
 
-            widgets.LinksContainer(data.on_upd_links)
+            ui.upload(
+                label="Logo (.pdf)",
+                max_files=1,
+                auto_upload=True,
+                on_upload=container.on_upd_logo,
+            ).mark("logo")
+
+            widgets.LinksContainer(container.on_upd_links)
 
         with widgets.MainColumn("Stile"):
-            with ui.card():
-                widgets.AccuracySelector(data)
+            with ui.card().classes("w-full"):
+                ui.label("Codice QR").classes("text-xl")
+                widgets.AccuracySelector().radio.bind_value(container, "err")
                 with ui.row().classes("w-full items-center gap-4"):
-                    ui.label("Primo piano")
-                    widgets.ColorSelector(data.on_upd_fg_col, data.style["dark"])
-                    ui.label("Sfondo")
-                    widgets.ColorSelector(
-                        data.on_upd_bg_col,
-                        data.style["light"],
-                        alpha_callback=data.on_upd_bg_alpha,
-                    )
+                    cs = widgets.ColorSelector("Primo piano")
+                    cs.cp.bind_value(container.colors, "fg")
+                    cs.on_pick(None)
+                    cs = widgets.ColorSelector("Sfondo", allow_alpha=True)
+                    cs.cp.bind_value(container.colors, "bg")
+                    cs.on_pick(None)  # trigger button color selection
 
                 with ui.grid(columns="1fr 2fr 1fr 2fr").classes(
-                    "w-full justify-items-center align-items-center"
+                    "w-full justify-items-center"
                 ):
-                    widgets.NumberSlider("x", data.on_upd_x, data.x)
-                    widgets.NumberSlider("y", data.on_upd_y, data.y)
+                    widgets.NumberSlider("x").bind_value(container.qr_tx, "x")
+                    widgets.NumberSlider("y").bind_value(container.qr_tx, "y")
+                    widgets.NumberSlider("Dimensioni", min=1).bind_value(
+                        container.qr_tx, "d"
+                    )
+                    widgets.NumberKnob("Ruota").bind_value(container.qr_tx, "r")
 
-                    widgets.NumberSlider("Dimensioni", data.on_upd_d, data.d, min=1)
-                    widgets.NumberKnob("Ruota", data.on_upd_r, data.r)
+            with ui.card().classes("w-full"):
+                ui.label("Logo").classes("text-xl")
+                with ui.grid(columns="1fr 2fr 1fr 2fr").classes(
+                    "w-full justify-items-center"
+                ):
+                    widgets.NumberSlider("x").bind_value(container.logo_tx, "x")
+                    widgets.NumberSlider("y").bind_value(container.logo_tx, "y")
+                    widgets.NumberSlider("Dimensioni", min=1).bind_value(
+                        container.logo_tx, "d"
+                    )
+                    widgets.NumberKnob("Ruota").bind_value(container.logo_tx, "r")
 
         with widgets.MainColumn("Anteprima") as col:
             col.classes("flex-grow")  # fill remaining space
@@ -128,16 +178,17 @@ def main():
                         "make_pdf"
                     )
                     make_btn.classes(add="w-[150px]")
-                    widgets.DownloadButton(data).mark("download")
+                    widgets.DownloadButton().mark("download")
             ui.card().classes("w-full h-full flex justify-center").mark("preview")
 
 
-app.native.settings["ALLOW_DOWNLOADS"] = True
-app.on_connect(lambda event: app.native.main_window.maximize())
-
 if __name__ in ["__main__", "__mp_main__"]:
+    container = Data()
+
+    app.native.settings["ALLOW_DOWNLOADS"] = True
+    # app.on_connect(lambda event: app.native.main_window.maximize())
     ui.run(
         title=NAME,
-        reload=False,
-        native=True,
+        reload=True,
+        # native=True,
     )

@@ -1,41 +1,16 @@
 import asyncio
-from collections import namedtuple
 from concurrent.futures import ProcessPoolExecutor
 from io import BytesIO
+from functools import partial
 
 from pypdf import PageObject, PdfReader, PdfWriter, Transformation
 from segno import make as make_qr
 
-Parameters = namedtuple(
-    "Parameters", ["data", "error", "style", "transform", "bg", "width", "height"]
-)
-Transform = namedtuple("Transform", ["x", "y", "d", "r"])
 
-
-def setup(data, preview):
-    tx = Transform(data.x / 100, data.y / 100, data.d / 100, data.r)
-    params = list()
-
-    for link in data.valid_links[:1] if preview else data.valid_links:
-        p = Parameters(
-            link, data.err.value, data.style, tx, data.bg_bytes, data.width, data.height
-        )
-        params.append(p)
-
-    return params
-
-
-def make_page(params: Parameters):
-    bg_page = PdfReader(BytesIO(params.bg)).pages[0]
-
-    buffer = BytesIO()
-    qr = make_qr(params.data, error=params.error)
-    qr.save(buffer, kind="pdf", **params.style)
-    stamp = PdfReader(buffer).pages[0]
-
+def apply_transform(stamp, ref, tx):
     s = (
-        params.transform.d
-        * min(bg_page.mediabox.width, bg_page.mediabox.height)
+        tx.d
+        * min(ref.mediabox.width, ref.mediabox.height)
         / max(stamp.mediabox.height, stamp.mediabox.width)
     )
     stamp.add_transformation(Transformation().scale(s, s), expand=True)
@@ -43,20 +18,38 @@ def make_page(params: Parameters):
     xo = stamp.mediabox.width / 2
     yo = stamp.mediabox.height / 2
     stamp.add_transformation(
-        Transformation()
-        .translate(-xo, -yo)
-        .rotate(params.transform.r)
-        .translate(xo, yo),
+        Transformation().translate(-xo, -yo).rotate(tx.r).translate(xo, yo),
         expand=True,
     )
 
-    x = bg_page.mediabox.width * params.transform.x - xo
-    y = bg_page.mediabox.height * params.transform.y - yo
+    x = ref.mediabox.width * tx.x - xo
+    y = ref.mediabox.height * tx.y - yo
     stamp.add_transformation(Transformation().translate(x, y), expand=True)
 
-    new_page = PageObject.create_blank_page(width=params.width, height=params.height)
+
+def make_page(link, error, color, bg, qr_tx, logo, logo_tx):
+    bg_page = PdfReader(BytesIO(bg)).pages[0]
+
+    # Create QR code
+    buffer = BytesIO()
+    qr = make_qr(link, error=error)
+    qr.save(buffer, kind="pdf", dark=color.fg, light=color.bg)
+    qr_stamp = PdfReader(buffer).pages[0]
+
+    # add logo if necessary
+    if logo is not None:
+        logo_stamp = PdfReader(BytesIO(logo)).pages[0]
+        apply_transform(logo_stamp, qr_stamp, logo_tx)
+        qr_stamp.merge_page(logo_stamp, expand=True, over=True)
+
+    apply_transform(qr_stamp, bg_page, qr_tx)
+
+    # merge pages
+    new_page = PageObject.create_blank_page(
+        width=bg_page.mediabox.width, height=bg_page.mediabox.height
+    )
     new_page.merge_page(bg_page)
-    new_page.merge_page(stamp, expand=True, over=True)
+    new_page.merge_page(qr_stamp, expand=True, over=True)
 
     temp_writer = PdfWriter()
     temp_writer.add_page(new_page)
@@ -81,16 +74,26 @@ def assemble_pages(pages, optimize=True):
     return pdf_buffer.getvalue()
 
 
-async def make(data, pages, preview, optimize=True):
+async def make(container, pages, preview, optimize=True):
     # setup the parameters for parallel page generation
-    params = await asyncio.to_thread(setup, data, preview)
+    links = container.valid_links[:1] if preview else container.valid_links
+
+    mkpage_special = partial(
+        make_page,
+        error=container.error_level,
+        color=container.colors.to_internals(),
+        bg=container.bg,
+        qr_tx=container.qr_tx.to_internals(),
+        logo=container.logo,
+        logo_tx=container.logo_tx.to_internals(),
+    )
 
     # parallel page generation
     loop = asyncio.get_running_loop()
 
     with ProcessPoolExecutor() as executor:
         # Submit all tasks
-        tasks = [loop.run_in_executor(executor, make_page, p) for p in params]
+        tasks = [loop.run_in_executor(executor, mkpage_special, link) for link in links]
 
         # Process tasks as they complete
         for future in asyncio.as_completed(tasks):
@@ -98,6 +101,6 @@ async def make(data, pages, preview, optimize=True):
             pages.append(page)
 
     # assemble pages
-    pdf_buffer = await asyncio.to_thread(assemble_pages, pages, optimize)
+    pdf_buffer = assemble_pages(pages, optimize)
 
     return pdf_buffer
