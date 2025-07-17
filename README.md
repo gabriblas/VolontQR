@@ -1,4 +1,9 @@
-# VolontQR
+# VolontQR 🚀
+
+[![License](https://img.shields.io/github/license/gabriblas/volontQR?color=orange)](https://github.com/gabriblas/VolontQR/blob/main/LICENSE)
+[![Version](https://img.shields.io/github/v/release/gabriblas/volontQR?color=blue)](https://github.com/gabriblas/VolontQR/releases/latest)
+[![Issues](https://img.shields.io/github/issues/gabriblas/volontQR?color=blue)](https://github.com/gabriblas/volontQR/issues)
+![Blame](https://img.shields.io/badge/code_quality-so_bad_it's_good-green)
 
 Questa repo contiene il codice sorgente per il generatore di codici QR usato da VolontMusic e la relativa interfaccia grafica. Questo strumento consente di creare un grande numero di biglietti, ognuno con un codice QR differente in base ad una lista di link (usato principalmente per permettere il voto dal pubblico in sala per contest musicali live). I codici QR vengono generati in parallelo piuttosto velocemente e il file risultante è abbastanza ottimizzato e compatto.
 
