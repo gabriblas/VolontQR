@@ -4,6 +4,7 @@ from time import sleep
 from functools import wraps
 
 from nicegui import ElementFilter, app, ui
+from pypdf.errors import PdfStreamError
 
 import internals.widgets as widgets
 from infos import NAME, VERSION, WEBSITE
@@ -13,7 +14,7 @@ from internals.data_container import Data
 
 def validating(func):
     @wraps(func)
-    async def decorated(event):
+    async def wrapped(event):
         kwargs = dict(type="negative", position="bottom-right")
         if container.bg is None:
             ui.notify("Nessuno sfondo caricato.", **kwargs)
@@ -30,7 +31,30 @@ def validating(func):
                 )
             return await func(event)
 
-    return decorated
+    return wrapped
+
+
+def check_upload_errors(func):
+    @wraps(func)
+    def wrapped(event):
+        try:
+            func(event)
+        except PdfStreamError:
+            ui.notify(
+                "Impossibile aprire il file come .pdf",
+                position="bottom-right",
+                type="warning",
+            )
+
+    return wrapped
+
+
+def not_a_pdf(event):
+    ui.notify(
+        "Solamente file .pdf possono essere utilizzati",
+        type="negative",
+        position="bottom-right",
+    )
 
 
 @validating
@@ -103,13 +127,13 @@ def main():
 
     # Title bar
     with ui.row().classes("h-[20px] w-full items-center"):
-        ui.label(f"🚀{NAME}").classes("text-2xl")
+        ui.label(f"{NAME} 🚀").classes("text-2xl")
         ui.space()
-        ui.label(VERSION)
+        ui.badge(VERSION)
         ui.add_head_html(
             '<link href="https://unpkg.com/eva-icons@1.1.3/style/eva-icons.css" rel="stylesheet" />'
         )
-        with ui.link(target=WEBSITE).classes("text-2xl").tooltip("GitHub"):
+        with ui.link(target=WEBSITE).classes("text-xl").tooltip("GitHub"):
             ui.icon("eva-github").classes("fill-white scale-125 m-1")
 
     with ui.row().classes("h-full w-full"):
@@ -118,15 +142,17 @@ def main():
                 label="Sfondo (.pdf)",
                 max_files=1,
                 auto_upload=True,
-                on_upload=container.on_upd_bg,
-            ).mark("bg")
+                on_upload=check_upload_errors(container.on_upd_bg),
+                on_rejected=not_a_pdf,
+            ).mark("bg").props('accept=".pdf"')
 
             ui.upload(
                 label="Logo (.pdf)",
                 max_files=1,
                 auto_upload=True,
-                on_upload=container.on_upd_logo,
-            ).mark("logo")
+                on_upload=check_upload_errors(container.on_upd_logo),
+                on_rejected=not_a_pdf,
+            ).mark("logo").props('accept=".pdf"')
 
             widgets.LinksContainer(container.on_upd_links)
 

@@ -67,7 +67,7 @@ class AccuracySelector(ui.row):
             ui.space()
             ui.icon("sym_r_help").classes("text-xl").tooltip(
                 "Un valore più alto risulta in un QR code più grande ma che verrà riconosciuto meglio. Questo è estremamente consigliato se un logo è incluso al centro del QR code."
-            )  # .style("width: 30em")
+            )
 
 
 class ColorSelector(ValueElement, ui.button):
