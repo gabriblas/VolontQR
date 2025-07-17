@@ -184,9 +184,9 @@ if __name__ in ["__main__", "__mp_main__"]:
     container = Data()
 
     app.native.settings["ALLOW_DOWNLOADS"] = True
-    # app.on_connect(lambda event: app.native.main_window.maximize())
+    app.on_connect(lambda event: app.native.main_window.maximize())
     ui.run(
         title=NAME,
-        reload=True,
-        # native=True,
+        # reload=True,
+        native=True,
     )
