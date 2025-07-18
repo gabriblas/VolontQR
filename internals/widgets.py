@@ -88,8 +88,8 @@ class ColorSelector(ValueElement, ui.button):
         r = int(color[1:3], 16) / 255
         g = int(color[3:5], 16) / 255
         b = int(color[5:7], 16) / 255
-        lum = rgb_to_yiq(r, g, b)[1]  # luminance
-        return "gray-10" if lum > 0.5 else "gray-3"
+        lum = rgb_to_yiq(r, g, b)[0]  # luminance
+        return "#000000" if lum > 0.5 else "#ffffff"
 
     def bind_value(self, *args, **kwargs):
         ret = super().bind_value(*args, **kwargs)
