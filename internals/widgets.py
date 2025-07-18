@@ -1,4 +1,4 @@
-from colorsys import rgb_to_hls
+from colorsys import rgb_to_yiq
 
 from nicegui import ui
 from nicegui.elements.mixins.value_element import ValueElement
@@ -85,11 +85,11 @@ class ColorSelector(ValueElement, ui.button):
 
     @staticmethod
     def smart_invert(color):
-        r = int(color[1:3], 16) / 256
-        g = int(color[3:5], 16) / 256
-        b = int(color[5:7], 16) / 256
-        lum = rgb_to_hls(r, g, b)[1]  # luminance
-        return "#000000" if lum > 0.5 else "#ffffff"
+        r = int(color[1:3], 16) / 255
+        g = int(color[3:5], 16) / 255
+        b = int(color[5:7], 16) / 255
+        lum = rgb_to_yiq(r, g, b)[1]  # luminance
+        return "gray-10" if lum > 0.5 else "gray-3"
 
     def bind_value(self, *args, **kwargs):
         ret = super().bind_value(*args, **kwargs)
