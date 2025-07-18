@@ -34,7 +34,7 @@ def validating(func):
     return wrapped
 
 
-def check_upload_errors(func):
+def notify_upload_errors(func):
     @wraps(func)
     def wrapped(event):
         try:
@@ -126,14 +126,14 @@ def main():
     ui.query(".nicegui-content").classes("h-screen w-screen")
 
     # Title bar
-    with ui.row().classes("h-[20px] w-full items-center"):
+    with ui.row().classes("h-[30px] w-full items-center"):
         ui.label(f"{NAME} 🚀").classes("text-2xl")
         ui.space()
-        ui.badge(VERSION)
+        ui.chip(VERSION, text_color="white")
         ui.add_head_html(
             '<link href="https://unpkg.com/eva-icons@1.1.3/style/eva-icons.css" rel="stylesheet" />'
         )
-        with ui.link(target=WEBSITE).classes("text-xl").tooltip("GitHub"):
+        with ui.link(target=WEBSITE).classes("text-2xl").tooltip("GitHub"):
             ui.icon("eva-github").classes("fill-white scale-125 m-1")
 
     with ui.row().classes("h-full w-full"):
@@ -142,7 +142,7 @@ def main():
                 label="Sfondo (.pdf)",
                 max_files=1,
                 auto_upload=True,
-                on_upload=check_upload_errors(container.on_upd_bg),
+                on_upload=notify_upload_errors(container.on_upd_bg),
                 on_rejected=not_a_pdf,
             ).mark("bg").props('accept=".pdf"')
 
@@ -150,7 +150,7 @@ def main():
                 label="Logo (.pdf)",
                 max_files=1,
                 auto_upload=True,
-                on_upload=check_upload_errors(container.on_upd_logo),
+                on_upload=notify_upload_errors(container.on_upd_logo),
                 on_rejected=not_a_pdf,
             ).mark("logo").props('accept=".pdf"')
 
@@ -207,10 +207,14 @@ def main():
 
 
 if __name__ in ["__main__", "__mp_main__"]:
+    import sys
+
     container = Data()
 
-    app.native.settings["ALLOW_DOWNLOADS"] = True
-    app.on_connect(lambda event: app.native.main_window.maximize())
+    # if native := "--native" in sys.argv:
+    #     app.native.settings["ALLOW_DOWNLOADS"] = True
+    #     app.on_connect(lambda event: app.native.main_window.maximize())
+
     ui.run(
         title=NAME,
         # reload=True,
